@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 import sqlite3
 from typing import Optional
+import re
 
 
 app = FastAPI(title="Price Comparator API")
@@ -81,8 +82,22 @@ def score_matching(p1, p2):
         if p1["stockage"] == p2["stockage"]:
             score += 1
 
+    # Nouveau : critère GPU, cherché dans le nom ET la description
+    texte1 = p1["nom"] + " " + (p1.get("description") or "")
+    texte2 = p2["nom"] + " " + (p2.get("description") or "")
+    gpu1 = extraire_gpu(texte1)
+    gpu2 = extraire_gpu(texte2)
+    if gpu1 or gpu2:
+        total_criteres += 1
+        if gpu1 and gpu2 and gpu1 == gpu2:
+            score += 1
     return score / total_criteres if total_criteres > 0 else 0
 
+def extraire_gpu(nom):
+    match = re.search(r'(RTX\s?\d{3,4}(?:\s?Ti)?|GTX\s?\d{3,4}|Radeon\s?\w*\s?\d*)', nom, re.IGNORECASE)
+    if not match:
+        return None
+    return match.group(1).upper().replace(" ", "")
 
 @app.get("/comparaison")
 def comparer_prix(seuil: float = 0.99):
