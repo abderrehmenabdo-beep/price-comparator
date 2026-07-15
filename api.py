@@ -1,5 +1,7 @@
 from fastapi import FastAPI, HTTPException
 import sqlite3
+from typing import Optional
+
 
 app = FastAPI(title="Price Comparator API")
 
@@ -13,12 +15,25 @@ def accueil():
     return {"message": "Bienvenue sur l'API Price Comparator"}
 
 @app.get("/produits")
-def lister_produits():
+def lister_produits(prix_min: Optional[float] = None, prix_max: Optional[float] = None):
     connexion = connexion_bdd()
     curseur = connexion.cursor()
-    curseur.execute("SELECT * FROM produits")
+
+    requete = "SELECT * FROM produits WHERE 1=1"
+    parametres = []
+
+    if prix_min is not None:
+        requete += " AND prix >= ?"
+        parametres.append(prix_min)
+
+    if prix_max is not None:
+        requete += " AND prix <= ?"
+        parametres.append(prix_max)
+
+    curseur.execute(requete, parametres)
     lignes = curseur.fetchall()
     connexion.close()
+
     return [dict(ligne) for ligne in lignes]
 
 @app.get("/produits/{produit_id}")
