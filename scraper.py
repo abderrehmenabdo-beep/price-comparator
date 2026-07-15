@@ -1,5 +1,6 @@
 import csv
 import requests
+import sqlite3
 import re
 from bs4 import BeautifulSoup
 
@@ -48,7 +49,41 @@ def scraper_produits(url):
             **specs
         })
     return produits
+def creer_base():
+    connexion = sqlite3.connect("produits.db")
+    curseur = connexion.cursor()
 
+    curseur.execute("""
+        CREATE TABLE IF NOT EXISTS produits (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nom TEXT NOT NULL,
+            prix REAL NOT NULL,
+            marque TEXT,
+            ecran REAL,
+            ram INTEGER,
+            stockage INTEGER,
+            description TEXT,
+            site TEXT,
+            UNIQUE(nom, site)
+        )
+    """)
+
+    connexion.commit()
+    connexion.close()
+    print("✅ Base de données 'produits.db' prête")
+def sauvegarder_bdd(produits, nom_site):
+    connexion = sqlite3.connect("produits.db")
+    curseur = connexion.cursor()
+
+    for p in produits:
+        curseur.execute("""
+            INSERT OR REPLACE INTO produits (nom, prix, marque, ecran, ram, stockage, description, site)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (p["nom"], p["prix"], p["marque"], p["ecran"], p["ram"], p["stockage"], p["description"], nom_site))
+
+    connexion.commit()
+    connexion.close()
+    print(f"✅ {len(produits)} produits synchronisés dans la base (site : {nom_site})")
 def score_matching(p1, p2):
     # La marque doit correspondre, sinon on rejette direct le match
     if p1["marque"].lower() != p2["marque"].lower():
@@ -132,3 +167,6 @@ def sauvegarder_csv(produits, nom_fichier):
 
 sauvegarder_csv(site_a, "produits_site_a.csv")
 sauvegarder_csv(site_b, "produits_site_b.csv")
+creer_base()
+sauvegarder_bdd(site_a, "Site A")
+sauvegarder_bdd(site_b, "Site B")
