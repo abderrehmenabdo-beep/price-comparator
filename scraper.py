@@ -10,17 +10,21 @@ def extraire_specs(description):
     ecran = re.search(r'(\d+\.?\d*)"', description)
     specs["ecran"] = float(ecran.group(1)) if ecran else None
 
+    # RAM : toujours le premier GB mentionné
     ram_matches = re.findall(r'(\d+)GB', description)
     specs["ram"] = int(ram_matches[0]) if ram_matches else None
 
-    # Stockage : gérer GB et TB (converti en GB pour comparer sur la même unité)
-    stockage_gb = re.search(r'(\d+)GB', description[description.find(",", description.find("GB")):]) if ram_matches else None
+    # Stockage : priorité au TB s'il existe (1TB = 1000GB)
     stockage_tb = re.search(r'(\d+)TB', description)
-
-    if len(ram_matches) > 1:
-        specs["stockage"] = int(ram_matches[1])
-    elif stockage_tb:
-        specs["stockage"] = int(stockage_tb.group(1)) * 1000  # TB -> GB
+    if stockage_tb:
+        specs["stockage"] = int(stockage_tb.group(1)) * 1000
+    elif len(ram_matches) > 1:
+        # 2e GB trouvé, uniquement si ce n'est pas la VRAM d'une carte graphique
+        # (on vérifie qu'il n'est pas juste avant "GB" collé à un nom de GPU connu)
+        if not re.search(r'(Radeon|GeForce|GTX|Intel HD).{0,10}' + ram_matches[1] + r'GB', description):
+            specs["stockage"] = int(ram_matches[1])
+        else:
+            specs["stockage"] = None
     else:
         specs["stockage"] = None
 
