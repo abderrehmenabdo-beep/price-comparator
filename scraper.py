@@ -1,3 +1,4 @@
+import csv
 import requests
 import re
 from bs4 import BeautifulSoup
@@ -115,3 +116,19 @@ if tests_reussis == tests_total:
     print("✅ La logique de matching est cohérente : un produit identique obtient toujours un score parfait.")
 else:
     print("⚠️ Certains produits ne matchent pas avec eux-mêmes — il y a un bug à corriger (probablement des specs manquantes/None).")
+# --- Sauvegarde des résultats en CSV ---
+def sauvegarder_csv(produits, nom_fichier):
+    with open(nom_fichier, mode="w", newline="", encoding="utf-8") as fichier:
+        writer = csv.writer(fichier)
+        # Ligne d'en-tête
+        writer.writerow(["nom", "prix", "marque", "ecran", "ram", "stockage", "description"])
+        # Une ligne par produit
+        for p in produits:
+            writer.writerow([
+                p["nom"], p["prix"], p["marque"],
+                p["ecran"], p["ram"], p["stockage"], p["description"]
+            ])
+    print(f"\n✅ {len(produits)} produits sauvegardés dans '{nom_fichier}'")
+
+sauvegarder_csv(site_a, "produits_site_a.csv")
+sauvegarder_csv(site_b, "produits_site_b.csv")
