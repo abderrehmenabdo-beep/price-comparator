@@ -2,6 +2,7 @@ import csv
 import requests
 import sqlite3
 import re
+import time
 from bs4 import BeautifulSoup
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
@@ -113,11 +114,12 @@ if __name__ == "__main__":
     print(f"→ {len(liens)} fiches produits trouvées\n")
 
     produits = []
-    for lien in liens[:15]:
+    for lien in liens[:40]: 
         print(f"Scraping : {lien}")
         produit = scraper_fiche_produit(lien)
         if produit:
             produits.append(produit)
+        time.sleep(0.3)
 
     print(f"\n✅ {len(produits)} produits extraits avec succès\n")
     for p in produits:
