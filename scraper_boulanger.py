@@ -33,7 +33,7 @@ def scraper_liste_produits(url_categorie):
         if re.match(r'^(/ref/\d+|https://www\.boulanger\.com/ref/\d+)', href):
             if href.startswith("/"):
                 href = "https://www.boulanger.com" + href
-            liens.add(href.split("?")[0])
+            liens.add(href.split("?")[0].split("#")[0])
 
     return list(liens)
 

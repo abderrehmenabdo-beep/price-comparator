@@ -37,7 +37,7 @@ def scraper_liste_produits(url_categorie):
         if "/p/" in href and href.endswith(".html"):
             if href.startswith("/"):
                 href = "https://www.rueducommerce.fr" + href
-            liens.add(href)
+            liens.add(href.split("#")[0])
 
     return list(liens)
 
