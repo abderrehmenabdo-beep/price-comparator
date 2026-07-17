@@ -36,7 +36,62 @@ def lister_produits(prix_min: Optional[float] = None, prix_max: Optional[float] 
     connexion.close()
 
     return [dict(ligne) for ligne in lignes]
+@app.get("/produits/site/{nom_site}")
+def produits_par_site(nom_site: str):
+    connexion = connexion_bdd()
+    curseur = connexion.cursor()
+    curseur.execute("SELECT * FROM produits WHERE site = ? COLLATE NOCASE", (nom_site,))
+    lignes = curseur.fetchall()
+    connexion.close()
 
+    if not lignes:
+        raise HTTPException(status_code=404, detail=f"Aucun produit trouvé pour le site '{nom_site}'")
+
+    return [dict(ligne) for ligne in lignes]
+@app.get("/stats")
+def statistiques():
+    connexion = connexion_bdd()
+    curseur = connexion.cursor()
+
+    # Nombre total de produits
+    curseur.execute("SELECT COUNT(*) FROM produits")
+    total_produits = curseur.fetchone()[0]
+
+    # Répartition par site
+    curseur.execute("SELECT site, COUNT(*) FROM produits GROUP BY site")
+    par_site = {site: nombre for site, nombre in curseur.fetchall()}
+
+    # Prix moyen, min, max
+    curseur.execute("SELECT AVG(prix), MIN(prix), MAX(prix) FROM produits")
+    prix_moyen, prix_min, prix_max = curseur.fetchone()
+
+    # Répartition par marque (top 5)
+    curseur.execute("SELECT marque, COUNT(*) as nb FROM produits GROUP BY marque ORDER BY nb DESC LIMIT 5")
+    top_marques = {marque: nombre for marque, nombre in curseur.fetchall()}
+
+    # Nombre de produits avec specs complètes
+    curseur.execute("""
+        SELECT COUNT(*) FROM produits 
+        WHERE ecran IS NOT NULL AND ram IS NOT NULL AND stockage IS NOT NULL
+    """)
+    produits_complets = curseur.fetchone()[0]
+
+    connexion.close()
+
+    return {
+        "total_produits": total_produits,
+        "par_site": par_site,
+        "prix": {
+            "moyen": round(prix_moyen, 2) if prix_moyen else None,
+            "min": prix_min,
+            "max": prix_max
+        },
+        "top_5_marques": top_marques,
+        "qualite_donnees": {
+            "produits_avec_specs_completes": produits_complets,
+            "pourcentage_complet": round(produits_complets / total_produits * 100, 1) if total_produits else 0
+        }
+    }
 @app.get("/produits/{produit_id}")
 def obtenir_produit(produit_id: int):
     connexion = connexion_bdd()
